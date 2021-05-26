@@ -1,0 +1,141 @@
+---
+title: "Bio302 Practical 1 Exploratory Data Analysis"
+author: "Richard J. Telford"
+date: "May 25, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Part 1 Peguins
+
+Load the `palmerpenguins` package and see the `penguins` data.
+
+````{r loading data}
+library(palmerpenguins)
+penguins.df <- penguins
+
+```
+
+Find the range, mean, median and variance of variable `bill_length_mm`.
+
+````{r}
+penguins.df %>% 
+  drop_na() %>% 
+  summarise(mean = mean(bill_length_mm), 
+                   median = median(bill_length_mm),
+                   range = range(bill_length_mm), 
+                   variance = var(bill_length_mm))
+```
+
+What is the standard error of the mean of `bill_length_mm`.
+
+````{r standard error}
+bill_len_SD <- sd(penguins.df$bill_length_mm, na.rm = TRUE)
+bill_len_SD
+bill_len_SE <- bill_len_SD/sqrt(344)
+bill_len_SE
+```
+
+Plot a histogram of variable `bill_length_mm` and mark the position of the mean and median.
+````{r histogram, warning=FALSE, message=FALSE}
+bill_length_histogram <- penguins.df %>% ggplot(aes(x = bill_length_mm)) +
+  geom_histogram(fill = "grey") + 
+  theme_bw() + 
+  labs(title = "Bill length", x = "Bill length (mm)", y = "Count") +
+  geom_vline(xintercept = mean(penguins.df$bill_length_mm, na.rm = TRUE), linetype = 1, color = "red")+
+  geom_vline(xintercept = median(penguins.df$bill_length_mm, na.rm = TRUE), linetype = 1, color = "blue")
+bill_length_histogram
+```
+
+
+
+Plot `bill_length_mm` against `bill_depth_mm`
+There are three levels in factor `species` Plot `bill_length_mm` against `bill_depth_mm`, coloured by `species`
+
+````{r plot bill length against bill depth, warning=FALSE}
+plot <- penguins.df %>% ggplot(aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point() + 
+  labs(x = "Bill length (mm)", y = "Bill depth (mm)") 
+plot
+```
+
+Find the covariance and correlation of `bill_length_mm` against `bill_depth_mm`.
+
+````{r covariance and correlation}
+
+#covariance 
+cov(penguins.df$bill_length_mm, penguins.df$bill_depth_mm, use = "pairwise.complete.obs")
+
+#correlation
+cor(penguins.df$bill_length_mm, penguins.df$bill_depth_mm, use = "pairwise.complete.obs")
+
+```
+
+Is the correlation significant? 
+  Yes, the p-value is less than 0.05 and is therefore significant.
+  
+````{r}
+cor.test(x = penguins.df$bill_length_mm, y = penguins.df$bill_depth_mm, use = "pairwise.complete.obs")
+
+````
+
+How should the p-value be interpreted?
+  When the p-value is significant, the null hypothesis is rejected. In this case this   means that the true correlations is not equal to 0. 
+
+
+Is the correlation between `bill_length_mm` against `bill_depth_mm` significant for any of the groups?
+
+```{r}
+penguinsA <- filter(penguins.df, species == "Adelie")
+cor.test(x=penguinsA$bill_length_mm, y=penguinsA$bill_depth_mm, use = "pairwise.complete.obs")
+
+penguinsC <- filter(penguins.df, species == "Chinstrap")
+cor.test(x=penguinsC$bill_length_mm, y=penguinsC$bill_depth_mm, use = "pairwise.complete.obs")
+
+penguinsG <- filter(penguins.df, species == "Gentoo")
+cor.test(x=penguinsG$bill_length_mm, y=penguinsG$bill_depth_mm, use = "pairwise.complete.obs")
+
+
+````
+
+This is a sub-group analysis, what are the dangers of this type of analysis?
+  There are several limitations when it comes to sub-group analysis. 
+    1. false positives due to multiple comparisons 
+    2. false negatives due to inadequate power 
+    3. small number of outcome events within each subgroup, whilst performing               multiple subgroup analyses makes it much more likely any effect suggested is         actually due to chance. If conclusions are made that a treatment is effective        based on subgroup analysis alone, those conclusions may well be misleading. 
+
+# Part 2 not penguins
+
+Install the `datasauRus` package with `install.packages("datasauRus")` and load it with `library`.
+
+````{r data import}
+install.packages("datasauRus")
+library(datasauRus)
+
+datasaurus.df <- datasaurus_dozen
+`````
+
+Dataset `datasaurus_dozen` has `x` and `y` variables and a dataset name. 
+For each dataset, calculate the mean and standard deviation of x and y and the correlationn between x and y.
+
+````{r analysis }
+datasaurus.df %>% 
+  group_by(dataset) %>% 
+  summarise(mean(x, na.rm = TRUE), 
+            sd(x, na.rm = TRUE), 
+            mean(y, na.rm = TRUE), 
+            mean(y, na.rm = TRUE))
+
+cor(datasaurus.df$x, datasaurus.df$y, use = "pairwise.complete.obs")
+
+````
+
+
+
+
+
+
