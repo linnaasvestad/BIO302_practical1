@@ -24,11 +24,10 @@ Find the range, mean, median and variance of variable `bill_length_mm`.
 
 ````{r}
 penguins.df %>% 
-  drop_na() %>% 
-  summarise(mean = mean(bill_length_mm), 
-                   median = median(bill_length_mm),
-                   range = range(bill_length_mm), 
-                   variance = var(bill_length_mm))
+  summarise(mean = mean(bill_length_mm, na.rm = TRUE), 
+                   median = median(bill_length_mm, na.rm = TRUE),
+                   range = range(bill_length_mm, na.rm = TRUE), 
+                   variance = var(bill_length_mm, na.rm = TRUE))
 ```
 
 What is the standard error of the mean of `bill_length_mm`.
@@ -36,7 +35,7 @@ What is the standard error of the mean of `bill_length_mm`.
 ````{r standard error}
 bill_len_SD <- sd(penguins.df$bill_length_mm, na.rm = TRUE)
 bill_len_SD
-bill_len_SE <- bill_len_SD/sqrt(344)
+bill_len_SE <- bill_len_SD/sqrt(sum(!is.na(penguins.df$bill_length_mm)))
 bill_len_SE
 ```
 
@@ -84,7 +83,7 @@ cor.test(x = penguins.df$bill_length_mm, y = penguins.df$bill_depth_mm, use = "p
 ````
 
 How should the p-value be interpreted?
-  When the p-value is significant, the null hypothesis is rejected. In this case this   means that the true correlations is not equal to 0. 
+  When the p-value is significant, the null hypothesis is rejected. In this case this means that if true correlation was zero, would be unlikely to get such a high correlation. 
 
 
 Is the correlation between `bill_length_mm` against `bill_depth_mm` significant for any of the groups?
@@ -113,7 +112,6 @@ This is a sub-group analysis, what are the dangers of this type of analysis?
 Install the `datasauRus` package with `install.packages("datasauRus")` and load it with `library`.
 
 ````{r data import}
-install.packages("datasauRus")
 library(datasauRus)
 
 datasaurus.df <- datasaurus_dozen
@@ -125,16 +123,27 @@ For each dataset, calculate the mean and standard deviation of x and y and the c
 ````{r analysis }
 datasaurus.df %>% 
   group_by(dataset) %>% 
-  summarise(mean(x, na.rm = TRUE), 
-            sd(x, na.rm = TRUE), 
-            mean(y, na.rm = TRUE), 
-            mean(y, na.rm = TRUE))
+  summarise(mean_x = mean(x, na.rm = TRUE), 
+            sd_x = sd(x, na.rm = TRUE), 
+            mean_y = mean(y, na.rm = TRUE), 
+            sd_y = sd(y, na.rm = TRUE), 
+            cor_x_y = cor(datasaurus.df$x, datasaurus.df$y, use = "pairwise.complete.obs"))
 
-cor(datasaurus.df$x, datasaurus.df$y, use = "pairwise.complete.obs")
+
 
 ````
 
+datasaurus_dozen plot 
 
+````{r plot}
+datasaurus_plot <- datasaurus.df %>% 
+  ggplot(aes(x = x, y = y, color = dataset)) + 
+  geom_point() +
+  theme_void() + 
+  theme(legend.position = "none") + #remove the legend 
+  facet_wrap(~dataset, ncol=3) #to make one plot per categorical variable 
+datasaurus_plot
+````
 
 
 
