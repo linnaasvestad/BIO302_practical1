@@ -1,0 +1,167 @@
+---
+title: "Spatial and temporal structure"
+author: "Richard J. Telford"
+date: "June 1, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE, message= FALSE}
+
+library(tidyverse)
+library(nlme)
+```
+
+1) Simulate a 100-observation autocorrelated timeseries with `arima.sim`, with a first order autoregressive coefficient of 0.5. Also make a time vector of `1:100`
+
+````{r}
+x <- arima.sim(list(order = c(1, 0, 0), ar = 0.5), n = 100) #1, 0, 0 says it's a first order - write 2, 0, 0 if you want a second order autoreg. 
+time <- c(1:100)
+
+`````
+
+2) Plot the data. 
+
+````{r}
+
+plot(x, col = "skyblue")
+
+````
+
+3) Regress the timeseries against time with an OLS model. Does the model appear to be statistically significant? No - the p-value is > 0.05 
+
+````{r}
+
+mod1 <- lm(x~time)
+summary(mod1)
+anova(mod1)
+
+````
+
+4) Plot the model diagnostics, including an `acf` and `pacf` of the residuals.
+
+
+````{r}
+
+plot(mod1)
+acf(resid(mod1))
+pacf(resid(mod1))
+
+````
+
+
+5) Use the Durbin-Watson test to test the residuals for autocorrelation.
+
+````{r, message = FALSE}
+library(lmtest)
+
+dwtest(mod1)
+
+````
+
+
+6) Fit a gls with an appropriate correlation structure. Is this a better model? How have the p-value and effect size changed?
+
+````{r}
+fit1.gls<- gls(x~time)
+summary(fit1.gls)
+fit2.gls <- gls(x~time, corr = corAR1())
+summary(fit2.gls)
+
+anova(fit1.gls, fit2.gls)
+````
+
+
+7) Repeat the above 1000 times and find how autocorrelation affects the distribution of the p-value and the effect size.
+
+````{r, message=FALSE}
+library(broom)
+library(broom.mixed)
+
+rerun(10, fit2.gls) %>% 
+  map_dfr(glance)
+
+##with lm model 
+rerun(1000, {x <- arima.sim(list(order = c(1, 0, 0), ar = 0.5), n = 100)
+time <- c(1:100)
+lm(x~time)}) %>% 
+   map_dfr(glance) %>% 
+  ggplot(aes(x = p.value)) + 
+  geom_histogram()
+
+##with gls model 
+rerun(1000, {x <- arima.sim(list(order = c(1, 0, 0), ar = 0.5), n = 100)
+time <- c(1:100)
+gls(x~time, corr = corAR1())}) %>% 
+   map_dfr(glance) %>% 
+  ggplot(aes(x = p.value)) + 
+  geom_histogram()
+
+````
+
+## Real data
+
+1) The built-in dataset LakeHuron has annual lake level data from 1885 to 1972
+Load the data with the command data(LakeHuron)
+
+````{r}
+data("LakeHuron")
+view(LakeHuron)
+lakehuron.df <- LakeHuron
+
+````
+
+
+2) Plot the data.
+
+````{r}
+
+plot(lakehuron.df, col = "skyblue")
+
+````
+
+3) Regress the LakeHuron lake level against year using a linear model. Is there a significant trend?
+
+````{r}
+
+year <- 
+mod2 <- lm(LakeHuron~time(LakeHuron))
+summary(mod2)
+
+````
+
+4) Plot the autocorrelation and partial autocorrelation functions for the residuals from this regression. Interpret them.
+
+````{r}
+
+acf(resid(mod2))
+pacf(resid(mod2))
+
+````
+
+5) Fit an autoregressive models to the residuals. Compare the results with your interpretation of the PACF plot.
+
+````{r}
+ar(x = resid(mod2))
+
+````
+
+
+6) Fit a gls model using a corAR1 correlation structure. Test if the correlation structure is necessary. Is the trend significant? 
+
+````{r}
+year <- time(LakeHuron)
+fit3.gls <- gls(LakeHuron~year)
+fit4.gls <- gls(LakeHuron~year, corr = corAR1())
+
+anova(fit3.gls, fit4.gls)
+
+````
+
+7) Fit a gls model using a corARMA correlation structure with two AR terms. Is this model an improvement?
+
+````{r}
+fit5.gls <- gls(LakeHuron~year, corr = corARMA(p=1, q=0)) #p is the number of AR terms, q is the number of MA terms. So to fit an AR2 model you need p = 2, q = 0
+
+anova(fit3.gls, fit4.gls, fit5.gls)
+
+````
