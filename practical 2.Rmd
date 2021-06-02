@@ -1,0 +1,134 @@
+---
+title: "Linear models"
+author: "Richard J. Telford"
+date: "May 26, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+## Linear Modelling Exercises
+
+1. Import the penguin data from the `palmerpenguin` package
+````{r loading library}
+library(tidyverse)
+library(palmerpenguins)
+penguins.df <- penguins
+
+````
+
+2. Do big birds have big beaks? Fit a linear model between bill length and body mass, and interpret the coefficients.
+  Yes, because the p-value is significant. 
+````{r lm }
+
+fit1.lm <- lm(bill_length_mm~body_mass_g, data = penguins.df)
+summary(fit1.lm)
+
+````
+
+````{r plot lm}
+p1 <- penguins.df %>% 
+  ggplot(aes(x = body_mass_g, y =bill_length_mm)) + 
+  geom_point() + 
+  theme_bw() + 
+  labs(x = "Body mass (g)", y = "Bill length (mm)") + 
+  geom_smooth(method = lm, color = "blue", formula = y~x, se = FALSE)
+  
+p1  
+
+````
+
+3. Examine the diagnostics plots. Is everything OK?
+    Residual VS fitted: should not have a clear pattern - looks ok 
+    Normal Q-Q: should follow the dashed line - looks ok 
+    Scale-location: should see a fairly horizontal line with spread points - looks ok 
+    Residual vs leverage: If you have points placed outside the dashed lines, they have high     Cook's distance. This means that they are influential outliers. Removing them will change     the results of the regression
+
+````{r diagnostic plot}
+par(mfrow=c(2,2)) # to get all four graphs in the same plot 
+plot(fit1.lm) 
+
+````
+
+4. Calculate the residual sum of squares (find sum the squared difference between the estimates calculated from the coefficients and the observed values).
+
+```{r RSS}
+anova(fit1.lm)
+
+##to do it by hand 
+sum((yi-(b0+b1xi))^2) #formula for calculating RSS 
+
+rss <- sum((penguins.df$bill_length_mm - #gives the observed value 
+              ((2.69*10^1)+((4.051*10^-3)*penguins.df$body_mass_g)))^2, na.rm=TRUE)
+```` 
+
+5. Recalculate the Residual sum of squares using different values for the coefficients (in the formula yi = Beta + Beta xi + εi).
+
+```{r RSS continued}
+rss2 <- sum((penguins.df$bill_length_mm - #gives the observed value 
+              ((4.87*10^1)+((2.92*10^-3)*penguins.df$body_mass_g)))^2, na.rm=TRUE)
+rss2
+
+````
+
+6. Is the new RSS larger or smaller?
+
+```{r}
+The RSS gets larger, regardless of how I change the numbers. This shows that the model is a good fit because you want the RSS to be as low as possible. 
+
+````
+
+7. Estimate the slope using covariance and variance.
+
+```{r slope calculation}
+#covariance and variance 
+penguins.df %>% 
+  summarise(
+          co_var = cov(penguins.df$bill_length_mm, penguins.df$body_mass_g, use = "pairwise.complete.obs"), 
+          variance_bill_len = var(bill_length_mm, na.rm = TRUE), 
+          variance_body_mass = var(body_mass_g, na.rm = TRUE))
+
+
+slope <- ( cov(penguins.df$bill_length_mm, penguins.df$body_mass_g, use = "pairwise.complete.obs") ) / (sqrt(((var(penguins.df$body_mass_g, na.rm = TRUE))^2)*((var(body_mass_g, na.rm = TRUE))^2)))
+
+
+2605.592/sqrt((643131.1^2)*(643131.1^2))
+
+````
+
+8. Do you get the same result?
+
+9. Add species to the model as a predictor.
+
+```{r add species as predictor}
+fit2.lm <- lm(bill_length_mm~body_mass_g*species, data = penguins.df)
+
+p2 <- penguins.df %>% 
+  ggplot(aes(x = body_mass_g, y = bill_length_mm, color = species)) + 
+  geom_point() + 
+  theme_bw() + 
+  labs(x = "Body mass (g)", y = "Bill length (mm)") +
+  geom_smooth(method = lm, color = "blue", formula = y~x, se = FALSE)
+p2  
+
+summary(fit2.lm)
+
+````
+
+10. Does species improve the model?
+  Yes, for this model the R-squared is higher and therefore more variance is explained by the model. 
+
+
+11. How should the coefficients be interpreted?
+  
+  intercept: the bill length of Adelie penguins 
+  body_mass_g
+  speciesChinstrap: 
+  speciesGentoo
+  body_mass_g:speciesChinstrap
+  body_mass_g:speciesGentoo 
+

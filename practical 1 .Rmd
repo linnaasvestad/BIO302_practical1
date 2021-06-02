@@ -83,7 +83,7 @@ cor.test(x = penguins.df$bill_length_mm, y = penguins.df$bill_depth_mm, use = "p
 ````
 
 How should the p-value be interpreted?
-  When the p-value is significant, the null hypothesis is rejected. In this case this means that if true correlation was zero, would be unlikely to get such a high correlation. 
+  When the p-value is significant, the null hypothesis is rejected. In this case this means that if true correlation was zero, it would be unlikely to get such a high correlation. 
 
 
 Is the correlation between `bill_length_mm` against `bill_depth_mm` significant for any of the groups?
@@ -98,7 +98,12 @@ cor.test(x=penguinsC$bill_length_mm, y=penguinsC$bill_depth_mm, use = "pairwise.
 penguinsG <- filter(penguins.df, species == "Gentoo")
 cor.test(x=penguinsG$bill_length_mm, y=penguinsG$bill_depth_mm, use = "pairwise.complete.obs")
 
+##Alternatively (a nicer code - copy this and do it for each species)
+cor.test(~bill_length_mm + bill_depth_mm, data = penguins.df, use = "pairwise.complete.obs", subset = species == "Gentoo")
 
+penguins.df %>% 
+  group_by(species) %>% 
+  summarise(cor = broom::glance(cor.test(bill_length_mm, bill_depth_mm, use = "pairwise.complete.obs" )))
 ````
 
 This is a sub-group analysis, what are the dangers of this type of analysis?

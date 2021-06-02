@@ -1,0 +1,76 @@
+---
+title: "Practical 3"
+author: "Richard J. Telford"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## GLS
+
+With the built-in `iris` data.
+
+````{r importing data, message = FALSE}
+library(tidyverse)
+iris.df <- iris
+````
+
+Make a plot to show how `Petal.Length` varies between species.
+
+
+````{r plotting petal length}
+petal_length_plot <- iris.df %>% 
+  ggplot(aes(x = Species, y = Petal.Length, fill = Species)) + 
+  geom_boxplot() + 
+  labs(x = "Species", y = "Petal Length")
+petal_length_plot
+````
+
+Find the variance of `Petal.Length` for each species.
+
+````{r variance petal length}
+
+iris.df %>% 
+  group_by(Species) %>% 
+  summarise(variance_petal_length = var(Petal.Length))
+
+
+````
+
+Fit an anova using `lm` between `Petal.Length` and species and examine the diagnostic plots.
+
+````{r making a model}
+fit1.lm <- lm(Petal.Length~Species, data = iris.df)
+par(mfrow=c(2,2))
+plot(fit1.lm) #bc of how the 3rd diagnostic plot looks, we can use gls for this dataset
+
+summary(fit1.lm)
+
+````
+
+Fit a `gls` for the same model. Have the coefficients changed? (remember to load ´nlme´ package): No, the coefficients are the same. 
+
+````{r gls , message = FALSE}
+library(nlme)
+fit1.gls <- gls(Petal.Length~Species, data = iris.df)
+summary(fit1.gls)
+
+````
+
+Fit a `gls` for the same model but allow the variance to be different for each species by adding `varIdent` to the `weights` argument of the model. 
+
+````{r }
+fit2.gls <- gls(Petal.Length~Species, data = iris.df, 
+                weights = varIdent(form = ~+1|Species ))
+summary(fit2.gls)
+````
+
+Use `AIC` to test if this is a better model.
+
+````{r AIC}
+anova(fit1.gls, fit2.gls)
+
+````
+
